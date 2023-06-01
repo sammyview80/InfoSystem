@@ -1,4 +1,6 @@
-def search_messages(service, query):
+def search_messages(service, query, filter_id=None):
+    if filter_id:
+        query += f' filter:{filter_id}'
     result = service.users().messages().list(userId="me", q=query).execute()
     messages = []
     if "messages" in result:

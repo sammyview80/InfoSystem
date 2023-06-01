@@ -1,0 +1,47 @@
+Mails
+token.pickle
+
+# Byte-compiled / optimized Python files
+*.pyc
+__pycache__/
+
+# Django development server
+*.pid
+*.log
+
+# Static files
+/static/
+public/static/
+
+# Media files
+/media/
+.vscode
+
+# Secret keys
+*.secret_key
+
+# Database
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+env
+
+# IDE specific files
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Ignore migrations for third-party apps
+**/migrations/*
+
+# Ignore local settings
+settings_local.py
+
+db.sqlite3
+
+data

@@ -1,7 +1,8 @@
 import os
 import numpy as np
 from PIL import Image
-from tensorflow.keras.models import load_model
+# from tensorflow.keras.models import load_model
+
 
 def load_image(image_path, image_size):
     """This will load the image and convert it to numpy array"""
@@ -11,6 +12,7 @@ def load_image(image_path, image_size):
     image = image / 255.0
     image = np.expand_dims(image, axis=0)
     return image
+
 
 def predict_notice(image_path, image_size, model_path='models/notice'):
     """This will predict the notice"""

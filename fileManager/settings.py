@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,6 +33,18 @@ ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'users.CustomUser'
 CORS_ORIGIN_ALLOW_ALL = True
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+STATIC_URL = '/static/'
+DB_URL = '/data'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static',)
+
+
+DB_ROOT = os.path.join(BASE_DIR, 'data')
 
 
 # Application definition
@@ -48,6 +61,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'users',
     'corsheaders',
+    'collage',
+    'documents',
 ]
 
 MIDDLEWARE = [

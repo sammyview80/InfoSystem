@@ -31,8 +31,8 @@ def read_message(service, message):
             name = header.get("name")
             value = header.get("value")
             # if name.lower() == "from":
-                # we print the From address
-                # print("From:", value)
+            # we print the From address
+            # print("From:", value)
             if name.lower() == "to":
                 # we print the To address
                 print("To:", value)
@@ -46,7 +46,7 @@ def read_message(service, message):
                     os.mkdir('Mails')
                 # we will also handle emails with the same subject name
                 if not os.path.isdir(os.path.join('Mails', folder_name)):
-                    os.mkdir(os.path.join('Mails',folder_name))
+                    os.mkdir(os.path.join('Mails', folder_name))
                 print("Subject:", value)
                 # print("\n \n Attachments", header.get("attachment"))
             if name.lower() == "date":
@@ -56,7 +56,7 @@ def read_message(service, message):
         # if the email does not have a subject, then make a folder with "email" name
         # since folders are created based on subjects
         if not os.path.isdir(folder_name):
-            os.mkdir(os.path.join('Mails',folder_name))
+            os.mkdir(os.path.join('Mails', folder_name))
     parse_parts(service, parts, folder_name, message)
     print("=" * 50)
 
@@ -78,7 +78,6 @@ def get_size_format(b, factor=1024, suffix="B"):
             return f"{b:.2f}{unit}{suffix}"
         b /= factor
     return f"{b:.2f}Y{suffix}"
-
 
 
 def parse_parts(service, parts, folder_name, message):
@@ -139,8 +138,8 @@ def parse_parts(service, parts, folder_name, message):
                                 .execute()
                             )
                             data = attachment.get("data")
-                            filepath = os.path.join('Mails',folder_name, filename)
+                            filepath = os.path.join(
+                                'Mails', folder_name, filename)
                             if data:
                                 with open(filepath, "wb") as f:
                                     f.write(urlsafe_b64decode(data))
-

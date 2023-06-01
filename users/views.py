@@ -3,10 +3,14 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserGmailTokenSerializer
+# from fileManager.mail.main import FetchMail, CheckMail
+from mail.main import FetchMail, CheckMail
 from django.contrib.auth import authenticate, login
-
-from .models import CustomUser
+import asyncio
+import threading
+from .models import CustomUser, UserGmailToken
+from django.shortcuts import get_object_or_404
 
 
 class UserRegistrationView(APIView):
@@ -64,3 +68,46 @@ class UserUpdateView(APIView):
         user.save()
 
         return Response("User successfully updated")
+
+
+class FetchMailView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def fetch_mail(self, user, creds):
+        # Implement your email fetching logic here
+        FetchMail(user, creds).run()
+
+    def save_file(self, user):
+        CheckMail(user).run()
+
+    def post(self, request):
+        email = request.user
+        user = CustomUser.objects.filter(email=email).values().first()
+        credientials  = UserGmailToken.objects.filter(user=email)
+        serializerCreds = UserGmailTokenSerializer(credientials, many=True)
+
+
+        # Run the email fetching operation in a separate thread
+        thread = threading.Thread(target=self.fetch_mail, args=(user, serializerCreds.data,))
+        thread.start()
+
+        thread.join()
+
+        thread = threading.Thread(target=self.save_file, args=(user,))
+        thread.start()
+
+        thread.join()
+
+        return Response("Email fetching started.", status=200)
+
+
+class TokenView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        tokenInstance = UserGmailToken.objects.filter(user=user)
+        serializer = UserGmailTokenSerializer(tokenInstance, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

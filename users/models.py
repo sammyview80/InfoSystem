@@ -1,7 +1,8 @@
-from django.contrib.auth.models import User
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-
+import os
+from django.core.validators import RegexValidator
+from collage.models import Semester, Year, Faculty
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -18,14 +19,23 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         return self.create_user(email, password, **extra_fields)
+    
+
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, validators=[
+            RegexValidator(
+                regex=r'^[\w.-]+@nec\.edu\.np$',
+                message="Please use NEC email address")
+        ])
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    semester = models.OneToOneField(Semester, on_delete=models.CASCADE, null=True)
+    year = models.OneToOneField(Year, on_delete=models.CASCADE, null=True)
+    faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, null=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
@@ -41,55 +51,12 @@ def get_upload_path(instance, filename):
     return f"data/{instance.user.id}-{filename}"
 
 
-class DOCDocument(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100)
-    file = models.FileField(upload_to=get_upload_path)
-
-    upload_timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
-
-
-class PDFDocument(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100)
-    file = models.FileField(upload_to=get_upload_path)
-
-    upload_timestamp = models.DateTimeField(auto_now_add=True)
+class UserGmailToken(models.Model):
+    user = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, unique=True)
+    pickle_token = models.FileField(
+        upload_to=get_upload_path, null=True, blank=True)
+    credentials = models.FileField(upload_to=get_upload_path)
 
     def __str__(self):
-        return self.title
-
-
-class ImageDocument(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100)
-    file = models.FileField(upload_to=get_upload_path)
-
-    upload_timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
-
-
-class PPTDocument(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100)
-    file = models.FileField(upload_to=get_upload_path)
-
-    upload_timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
-
-
-class XLSXDocument(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    title = models.CharField(max_length=100)
-    file = models.FileField(upload_to=get_upload_path)
-    upload_timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
+        return self.user.email

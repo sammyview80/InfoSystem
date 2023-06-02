@@ -9,5 +9,6 @@ urlpatterns = [
     path('update/', UserUpdateView.as_view(), name='user-update'),
     path('fetchmail/', FetchMailView.as_view(), name='fetch-mail'),
     path('tokens/', TokenView.as_view(), name='token'),
-    path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls')),
+    path('document/', include('documents.urls'))
 ]

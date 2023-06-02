@@ -32,7 +32,6 @@ class FetchMail:
 
     def run(self):
         messages = self.search_message('Nepal Engineering College')
-        print('user', self.user)
 
         for msg in messages[:5]:
             print(self.display_message(msg))

@@ -27,6 +27,9 @@ class DOCDocument(models.Model):
     def save(self, *args, **kwargs):
         # Set the title field with the file name without extension
         self.title = os.path.splitext(os.path.basename(self.file.name))[0]
+        print(self.user)
+        self.semester = self.user.semester
+        self.faculty = self.user.faculty
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -9,6 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['email', 'first_name', 'last_name', 'password', 'semester', 'year', 'faculty']
         extra_kwargs = {'password': {'write_only': True}, "semester": {"error_messages": {"required": "Give yourself a username"}}}
+    
 
 
 class UserGmailTokenSerializer(serializers.ModelSerializer):

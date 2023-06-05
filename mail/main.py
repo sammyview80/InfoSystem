@@ -16,11 +16,12 @@ from .utils.detector import is_pdf, is_ppt, is_docx, is_xlsx, is_image
 
 class FetchMail:
     def __init__(self, user, credintials):
-        self.user = user
         self.creds = None
         self.credintials = credintials
         self.service = get_authenticate(self.credintials)
-
+    def get_authenticate(self):
+        """This will authenticate the user and return the service"""
+        return get_authenticate(credientials=self.credintials)
     def display_message(self, message_id):
         """This will save the mail in the Mails folder and display on command line"""
         return read_message(self.service, message_id)
@@ -33,7 +34,7 @@ class FetchMail:
     def run(self):
         messages = self.search_message('Nepal Engineering College')
 
-        for msg in messages[:5]:
+        for msg in messages[:10]:
             print(self.display_message(msg))
 
 

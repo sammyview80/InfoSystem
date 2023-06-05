@@ -15,7 +15,7 @@ class PDFDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PDFDocument
         fields = ['file', 'user', 'semester', 'faculty']
-        read_only_fields = ('user', 'semester', 'faculty')
+        # read_only_fields = ('user', 'semester', 'faculty')
 
 
 class PPTDocumentSerializer(serializers.ModelSerializer):

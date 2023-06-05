@@ -14,20 +14,20 @@ from .models import CustomUser, PDFDocument
 from collage.models import Semester, Faculty
 from django.shortcuts import get_object_or_404
 
-class UploadPdfView(APIView):
+class GetAllPdfView(APIView): 
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    def post(self, request):
+    def get(self, request):
         user = request.user
         pdfInstance = PDFDocument.objects.filter(user=user)
         pdfSerializers = PDFDocumentSerializer(pdfInstance, many=True)
         return Response(pdfSerializers.data, status=status.HTTP_200_OK)
     
 
-class GetAllPdfView(APIView):
+class UploadPdfView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    def get(self, request):
+    def post(self, request):
         email = request.user
         user =  CustomUser.objects.filter(email=email).values().first()
         semester = Semester.objects.filter(id=user['semester_id']).values().first()

@@ -12,8 +12,11 @@ import asyncio
 import threading
 from .models import CustomUser, UserGmailToken
 from django.shortcuts import get_object_or_404
+from mail.utils.gmail.get_authenticate import get_data_from_url, get_authenticate
+from google.oauth2.credentials import Credentials
 
-
+SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify"]
 class UserRegistrationView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
@@ -103,6 +106,119 @@ class FetchMailView(APIView):
 
         return Response("Email fetching started.", status=200)
 
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+import requests
+import tempfile
+import io
+import pickle
+
+
+class OauthLink(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+    def post(self, request):
+        email = request.user
+        user = CustomUser.objects.filter(email=email).values().first()
+        print('user', user)
+        instance  = UserGmailToken.objects.filter(user=email)
+        print('instance', instance)
+        credentials = UserGmailTokenSerializer(instance, many=True)
+        file_content = get_data_from_url(f'http://localhost:8000{list(credentials.data)[0]["credentials"]}')
+        # pickle_content = get_data_from_url(f'http://localhost:8000{list(credentials.data)[0]["pickle_token"]}')
+        authorization_url=None
+        scheme = request.scheme
+        host = request.get_host()
+        base_url = f"{scheme}://{host}"
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(file_content.content)
+            temp_file.flush()
+            flow = InstalledAppFlow.from_client_secrets_file(temp_file.name, SCOPES, redirect_uri=f'{base_url}/users/oauth2callback/?user={email}')
+            authorization_url, _ = flow.authorization_url(prompt='consent')
+            
+        return Response({"outhlink": authorization_url}, status=status.HTTP_201_CREATED)
+    
+
+class CatchOauthCreds(APIView):
+
+    def get(self, request):
+        authorization_code = request.GET.get('code')
+        email = request.GET.get('user')
+        print(email)
+        state = request.GET.get('state')
+        user = CustomUser.objects.filter(email=email).values().first()
+        print('user', user) 
+
+        instance  = UserGmailToken.objects.filter(user=user['id'])
+        credentials = UserGmailTokenSerializer(instance, many=True)
+        scheme = request.scheme
+        host = request.get_host()
+        base_url = f"{scheme}://{host}"
+
+        file_content = get_data_from_url(f'{base_url}{list(credentials.data)[0]["credentials"]}')
+        # pickle_content = get_data_from_url(f'http://localhost:8000{list(credentials.data)[0]["pickle_token"]}')
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(file_content.content)
+            temp_file.flush()
+            flow = InstalledAppFlow.from_client_secrets_file(temp_file.name, SCOPES, redirect_uri=f'{base_url}/users/oauth2callback/?user={email}')
+            credentials = flow.fetch_token(code=authorization_code)
+            credentials = Credentials(credentials)
+            with open(temp_file.name, "wb") as token:
+                    instance = UserGmailToken.objects.get(user=user['id'])
+                    print('instance', instance)
+                    # data = {
+                    #     'pickle_token': pickle.dump(creds, token),
+                    #     'credentials': temp_file,
+                    #     'user': userId
+                    # }
+                    # Create a file-like object using io.BytesIO()
+                    pickle_file = io.BytesIO()
+
+                    # Dump the `creds` object into the file-like object
+                    pickle.dump(credentials, pickle_file)
+
+                    # Set the position of the file-like object to the beginning
+                    pickle_file.seek(0)
+
+                    # Assign the file-like object to the `pickle_token` field
+                    instance.pickle_token.save('pickle_token.pkl', pickle_file)
+
+                    # Save the changes to the database
+                    instance.save()
+
+
+        return Response({'idata': 'sdfds', 'pod': user}, status=status.HTTP_200_OK)
+
+        credentials = flow.fetch_token(authorization_response=request.build_absolute_uri(), code=authorization_code)
+        with open(temp_file.name, "wb") as token:
+            instance = UserGmailToken.objects.get(user=userId)
+            # data = {
+            #     'pickle_token': pickle.dump(creds, token),
+            #     'credentials': temp_file,
+            #     'user': userId
+            # }
+            # Create a file-like object using io.BytesIO()
+            pickle_file = io.BytesIO()
+
+            # Dump the `creds` object into the file-like object
+            pickle.dump(creds, pickle_file)
+
+            # Set the position of the file-like object to the beginning
+            pickle_file.seek(0)
+
+            # Assign the file-like object to the `pickle_token` field
+            instance.pickle_token.save('pickle_token.pkl', pickle_file)
+
+            # Save the changes to the database
+            instance.save()
+        
+        # Save the credentials to the database
+        save_credentials_to_db(credentials)  # Replace with your database save logic
+
+        return HttpResponse("Credentials saved successfully.")
+
 
 class TokenView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -113,3 +229,16 @@ class TokenView(APIView):
         tokenInstance = UserGmailToken.objects.filter(user=user)
         serializer = UserGmailTokenSerializer(tokenInstance, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class GmailOauthView(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        FetchMail
+        serializer = UserGmailTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

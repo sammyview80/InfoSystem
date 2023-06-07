@@ -63,6 +63,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'collage',
     'documents',
+    'subject',
+    'attendence',
+    'routine'
 ]
 
 MIDDLEWARE = [
@@ -82,6 +85,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
 }
 
 AUTHENTICATION_BACKENDS = [

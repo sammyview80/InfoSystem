@@ -116,9 +116,6 @@ def get_authenticate(credientials):
     creds_file = None
     authorization_url=None
 
-
-
-
     if pickle_content is not None:
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 temp_file.write(pickle_content.content)

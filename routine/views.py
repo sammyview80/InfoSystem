@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import RoutineSerializer, RoutineTypeSerializer
 from .models import Routine, RoutineType
+from utils.decorator import with_advance_search
 
 
 # class GetAllRoutine(APIView):
@@ -55,22 +56,12 @@ class GetAllRoutine(APIView):
     serializer_class = RoutineSerializer
 
     def get(self, request, format=None):
-        type = request.query_params.get('type', '')
-        semester = request.query_params.get('semester', '')
-        year = request.query_params.get('year', '')
-        faculty = request.query_params.get('faculty', '')
-        id = request.query_params.get('id', '')
-        filter_conditions = {}
-        if type:
-            filter_conditions['type'] = type
-        if semester:
-            filter_conditions['semester'] = semester
-        if year:
-            filter_conditions['year'] = year
-        if faculty:
-            filter_conditions['faculty'] = faculty
-        if id:
-            filter_conditions['id'] = id
+        @with_advance_search
+        def get_advance_search(request, params):
+            return request
+
+        filter_conditions = get_advance_search(request,
+                                               {'query': ['type', 'semester', 'year', 'faculty', 'id']})
 
         instances = Routine.objects.filter(**filter_conditions)
 

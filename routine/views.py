@@ -55,12 +55,11 @@ class GetAllRoutine(APIView):
     serializer_class = RoutineSerializer
 
     def get(self, request, format=None):
-        # Get query parameters
-        limit = int(request.query_params.get('limit', 10))
         type = request.query_params.get('type', '')
         semester = request.query_params.get('semester', '')
         year = request.query_params.get('year', '')
         faculty = request.query_params.get('faculty', '')
+        id = request.query_params.get('id', '')
         filter_conditions = {}
         if type:
             filter_conditions['type'] = type
@@ -70,16 +69,14 @@ class GetAllRoutine(APIView):
             filter_conditions['year'] = year
         if faculty:
             filter_conditions['faculty'] = faculty
+        if id:
+            filter_conditions['id'] = id
 
-        # Apply search filter if type is provided
-        print('semester', semester)
         instances = Routine.objects.filter(**filter_conditions)
 
-        # Paginate the results
         paginator = self.pagination_class()
         paginated_instances = paginator.paginate_queryset(instances, request)
 
-        # Serialize paginated instances
         serializer = self.serializer_class(paginated_instances, many=True)
 
         return paginator.get_paginated_response(serializer.data)

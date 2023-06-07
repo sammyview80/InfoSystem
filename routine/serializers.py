@@ -21,8 +21,7 @@ class RoutineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Routine
-        fields = ['type', 'name', 'file', 'semester', 'year', 'faculty']
-        # read_only_fields = ('type', 'recipient')
+        fields = ['id', 'type', 'name', 'file', 'semester', 'year', 'faculty']
 
     def __fields__(self):
         return ['id', 'type', 'name']

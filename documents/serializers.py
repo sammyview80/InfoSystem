@@ -24,6 +24,11 @@ class PDFDocumentSerializer(serializers.ModelSerializer):
         fields = ['file', 'user', 'semester', 'faculty']
         # read_only_fields = ('user', 'semester', 'faculty')
 
+    def create(self, validated_data):
+        raise serializers.ValidationError("Field1 cannot be 'example'")
+        instance = super().create(validated_data)
+        return instance
+
 
 class PPTDocumentSerializer(serializers.ModelSerializer):
     user = UserSerializer()

@@ -6,7 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
-from .serializers import PDFDocumentSerializer, DOCDocumentSerializer, ImageDocumentSerializer, PPTDocumentSerializer
+from .serializers import PDFDocumentSerializer, DOCDocumentSerializer, ImageDocumentSerializer, PPTDocumentSerializer, XLSXDocumentSerializer
 # from fileManager.mail.main import FetchMail, CheckMail
 from mail.main import FetchMail, CheckMail
 from django.contrib.auth import authenticate, login
@@ -62,6 +62,50 @@ class GeAllDocumentView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
+class GetAllPPTView(APIView):
+    pagination_class = PageNumberPagination
+    serializer_class = PPTDocumentSerializer
+
+    def get(self, request, format=None):
+        @with_advance_search
+        def get_advance_search(request, params):
+            return request
+
+        filter_conditions = get_advance_search(request,
+                                               {'query': ['id', 'user', 'semester', 'faculty']})
+
+        instances = PPTDocument.objects.filter(**filter_conditions)
+
+        paginator = self.pagination_class()
+        paginated_instances = paginator.paginate_queryset(instances, request)
+
+        serializer = self.serializer_class(paginated_instances, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class GetAllXLXSView(APIView):
+    pagination_class = PageNumberPagination
+    serializer_class = XLSXDocumentSerializer
+
+    def get(self, request, format=None):
+        @with_advance_search
+        def get_advance_search(request, params):
+            return request
+
+        filter_conditions = get_advance_search(request,
+                                               {'query': ['id', 'user', 'semester', 'faculty']})
+
+        instances = XLSXDocument.objects.filter(**filter_conditions)
+
+        paginator = self.pagination_class()
+        paginated_instances = paginator.paginate_queryset(instances, request)
+
+        serializer = self.serializer_class(paginated_instances, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
 class UploadPdfView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -69,11 +113,8 @@ class UploadPdfView(APIView):
     def post(self, request):
         email = request.user
         user = CustomUser.objects.filter(email=email).values().first()
-        semester = Semester.objects.filter(
-            id=user['semester_id']).values().first()
-        faculty = Faculty.objects.filter(
-            id=user['faculty_id']).values().first()
-        pdfSerializer = PDFDocumentSerializer(data=request.data)
+        pdfSerializer = PDFDocumentSerializer(
+            **{'data': request.data})
         if pdfSerializer.is_valid():
             pdfSerializer.save(user=email)
             return Response({**pdfSerializer.data, 'semester': semester, 'faculty': faculty}, status=status.HTTP_201_CREATED)

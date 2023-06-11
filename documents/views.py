@@ -114,7 +114,7 @@ class UploadPdfView(APIView):
         email = request.user
         user = CustomUser.objects.filter(email=email).values().first()
         pdfSerializer = PDFDocumentSerializer(
-            **{'data': request.data})
+            data=request.data)
         if pdfSerializer.is_valid():
             pdfSerializer.save(user=email)
             return Response({**pdfSerializer.data, 'semester': semester, 'faculty': faculty}, status=status.HTTP_201_CREATED)

@@ -22,7 +22,8 @@ from mail.utils.gmail.get_authenticate import get_data_from_url, get_authenticat
 from google.oauth2.credentials import Credentials
 import pandas as pd
 import numpy as np
-
+from routine.models import Day, BatchSemester, Room, Group, TeacherWithSubject, Routine
+from routine.serializers import DaySerializer, BatchSemesterSerializer, RoomSerializer, GroupSerializer, PeriodSeriallizer, TeacherWithSubjectSerializer, RoutineSerializer
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
           "https://www.googleapis.com/auth/gmail.modify"]
 
@@ -195,35 +196,35 @@ class CatchOauthCreds(APIView):
 
         return Response({'idata': 'sdfds', 'pod': user}, status=status.HTTP_200_OK)
 
-        credentials = flow.fetch_token(
-            authorization_response=request.build_absolute_uri(), code=authorization_code)
-        with open(temp_file.name, "wb") as token:
-            instance = UserGmailToken.objects.get(user=userId)
-            # data = {
-            #     'pickle_token': pickle.dump(creds, token),
-            #     'credentials': temp_file,
-            #     'user': userId
-            # }
-            # Create a file-like object using io.BytesIO()
-            pickle_file = io.BytesIO()
+        # credentials = flow.fetch_token(
+        #     authorization_response=request.build_absolute_uri(), code=authorization_code)
+        # with open(temp_file.name, "wb") as token:
+        #     instance = UserGmailToken.objects.get(user=userId)
+        #     # data = {
+        #     #     'pickle_token': pickle.dump(creds, token),
+        #     #     'credentials': temp_file,
+        #     #     'user': userId
+        #     # }
+        #     # Create a file-like object using io.BytesIO()
+        #     pickle_file = io.BytesIO()
 
-            # Dump the `creds` object into the file-like object
-            pickle.dump(creds, pickle_file)
+        #     # Dump the `creds` object into the file-like object
+        #     pickle.dump(creds, pickle_file)
 
-            # Set the position of the file-like object to the beginning
-            pickle_file.seek(0)
+        #     # Set the position of the file-like object to the beginning
+        #     pickle_file.seek(0)
 
-            # Assign the file-like object to the `pickle_token` field
-            instance.pickle_token.save('pickle_token.pkl', pickle_file)
+        #     # Assign the file-like object to the `pickle_token` field
+        #     instance.pickle_token.save('pickle_token.pkl', pickle_file)
 
-            # Save the changes to the database
-            instance.save()
+        #     # Save the changes to the database
+        #     instance.save()
 
-        # Save the credentials to the database
-        # Replace with your database save logic
-        save_credentials_to_db(credentials)
+        # # Save the credentials to the database
+        # # Replace with your database save logic
+        # save_credentials_to_db(credentials)
 
-        return HttpResponse("Credentials saved successfully.")
+        # return HttpResponse("Credentials saved successfully.")
 
 
 class TokenView(APIView):
@@ -252,7 +253,7 @@ class GmailOauthView(APIView):
 
 class ExtraceSheet(APIView):
 
-    def get(self, request):
+    def post(self, request):
         SHEET_ID = '1CNkSTtwgOPKNCPlLI1KPwzIOOz9GI6fW'
         SHEET_NAME = 'AAPL'
         url = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx'
@@ -320,8 +321,61 @@ class ExtraceSheet(APIView):
                 df.at[index, column] =  df[column][index+1]
 
         for head in df.columns.values.tolist():
-            # for every heading save it to db with unique name
-            pass
+            single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
+            if head not in single_fields:
+                starting_time, ending_time = head.split(' ')
+        #     Save to df with list 
+            for value in df[head].tolist():
+                if head == 'Day':
+                    serializer = DaySerializer(data={'name': value})
+                    if serializer.is_valid():
+                        try:
+                            serializer.save()                        
+                        except Exception as e:
+                            continue
+                elif head == 'Batch Semester':
+                    serializer = BatchSemesterSerializer(data={'name': value})
+                    if serializer.is_valid():
+                        try:
+                            serializer.save()                        
+                        except Exception as e:
+                            continue
+                elif head == 'Room':
+                    serializer = RoomSerializer(data={'name': value})
+                    if serializer.is_valid():
+                        try:
+                            serializer.save()                        
+                        except Exception as e:
+                            continue
+
+                elif head == 'Group':
+                    serializer = GroupSerializer(data={'name': value})
+                    if serializer.is_valid():
+                        try:
+                            serializer.save()                        
+                        except Exception as e:
+                            continue
+                else:
+                    time_serializer = PeriodSeriallizer(data={'starting_time': '0', 'ending_time': "0", 'teacherName': {'name' : value}})
+                    if time_serializer.is_valid():
+                        try:
+                            time_serializer.save()                        
+                        except Exception as e:
+                            continue
+                    else: return Response({'data': time_serializer.errors}, status=status.HTTP_417_EXPECTATION_FAILED)
+                    # serializer = TeacherWithSubjectSerializer(data={'name': value})
+                    # if(time_serializer.is_valid()):
+                    #     print('hiijij')
+                    # if serializer.is_valid():
+                    #     try:
+                    #         serializer.save() 
+                    #     except Exception as e:
+                    #         continue
+                
+                        # return Response({'data': serializer.errors}, status=status.HTTP_417_EXPECTATION_FAILED)
+
+                    
+
 
         df.to_excel('./new.xlsx')
-        return Response({'data': df}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'data': df}, status=status.HTTP_200_OK)

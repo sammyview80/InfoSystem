@@ -1,7 +1,7 @@
 from django.urls import path, include
 
-from .views import GetAllRoutine
+from .views import GetAllAutomatedRoutine
 urlpatterns = [
-    path('getAll/', GetAllRoutine.as_view(), name='get-routine'),
+    path('getAll/', GetAllAutomatedRoutine.as_view(), name='get-routine'),
 
 ]

@@ -22,8 +22,8 @@ from mail.utils.gmail.get_authenticate import get_data_from_url, get_authenticat
 from google.oauth2.credentials import Credentials
 import pandas as pd
 import numpy as np
-from routine.models import Day, BatchSemester, Room, Group, TeacherWithSubject, Routine
-from routine.serializers import DaySerializer, BatchSemesterSerializer, RoomSerializer, GroupSerializer, PeriodSeriallizer, TeacherWithSubjectSerializer, RoutineSerializer
+from routine.models import Day, BatchSemester, Room, Group, TeacherWithSubject, Period, AutoMatedRoutine
+from routine.serializers import DaySerializer, BatchSemesterSerializer, RoomSerializer, GroupSerializer, PeriodSeriallizer, TeacherWithSubjectSerializer, AutoMatedRoutineSerializers
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
           "https://www.googleapis.com/auth/gmail.modify"]
 
@@ -251,13 +251,14 @@ class GmailOauthView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ExtraceSheet(APIView):
 
     def post(self, request):
         SHEET_ID = '1CNkSTtwgOPKNCPlLI1KPwzIOOz9GI6fW'
         SHEET_NAME = 'AAPL'
         url = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx'
-        df = pd.read_excel('users/output.xlsx')   
+        df = pd.read_excel('users/output.xlsx')
         index = df[df.eq('Electives for VIII Sem').any(axis=1)].index
         df.drop(range(index[0], len(df)), inplace=True)
         df.drop(1, inplace=True)
@@ -288,12 +289,12 @@ class ExtraceSheet(APIView):
                 if column_name not in skip_columns and index:
                     if df.at[index, 'Batch Semester'] != df.at[index - 1, 'Batch Semester']:
                         prev_value = None
-                if not pd.isna(value): 
+                if not pd.isna(value):
                     prev_value = value
-                    
+
                 newColumnValue.append(prev_value)
             df[column_name] = newColumnValue
-            
+
         for head in df.columns.values.tolist():
             replace_nan_value(df, head)
 
@@ -312,70 +313,146 @@ class ExtraceSheet(APIView):
         rows_with_nan = df[mask.any(axis=1)]
         columns_with_nan = df.columns[mask.any(axis=0)]
 
-
         df[columns_with_nan[0]]
         df.at[rows_with_nan.index[0], columns_with_nan[0]] = 'asdn'
 
         for column in columns_with_nan:
             for index in rows_with_nan.index:
-                df.at[index, column] =  df[column][index+1]
+                df.at[index, column] = df[column][index+1]
 
         for head in df.columns.values.tolist():
             single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
             if head not in single_fields:
                 starting_time, ending_time = head.split(' ')
-        #     Save to df with list 
-            for value in df[head].tolist():
+        #     Save to df with list
+            for value in pd.unique(df[head]):
+                # value = value.replace(" ", "").lower()
                 if head == 'Day':
                     serializer = DaySerializer(data={'name': value})
+                    day = value
                     if serializer.is_valid():
                         try:
-                            serializer.save()                        
+                            serializer.save()
                         except Exception as e:
                             continue
+
                 elif head == 'Batch Semester':
                     serializer = BatchSemesterSerializer(data={'name': value})
                     if serializer.is_valid():
                         try:
-                            serializer.save()                        
+                            serializer.save()
                         except Exception as e:
                             continue
                 elif head == 'Room':
+
                     serializer = RoomSerializer(data={'name': value})
                     if serializer.is_valid():
                         try:
-                            serializer.save()                        
+                            serializer.save()
                         except Exception as e:
                             continue
 
                 elif head == 'Group':
+
                     serializer = GroupSerializer(data={'name': value})
                     if serializer.is_valid():
                         try:
-                            serializer.save()                        
+                            serializer.save()
                         except Exception as e:
                             continue
                 else:
-                    time_serializer = PeriodSeriallizer(data={'starting_time': '0', 'ending_time': "0", 'teacherName': {'name' : value}})
-                    if time_serializer.is_valid():
-                        try:
-                            time_serializer.save()                        
-                        except Exception as e:
-                            continue
-                    else: return Response({'data': time_serializer.errors}, status=status.HTTP_417_EXPECTATION_FAILED)
-                    # serializer = TeacherWithSubjectSerializer(data={'name': value})
-                    # if(time_serializer.is_valid()):
-                    #     print('hiijij')
-                    # if serializer.is_valid():
+                    # time_serializer = PeriodSeriallizer(
+                    #     data={'starting_time': '0', 'ending_time': "0", 'teacherName': {'name': value}})
+                    # if time_serializer.is_valid():
                     #     try:
-                    #         serializer.save() 
+                    #         time_serializer.save()
                     #     except Exception as e:
                     #         continue
-                
-                        # return Response({'data': serializer.errors}, status=status.HTTP_417_EXPECTATION_FAILED)
+                    # else:
+                    #     return Response({'data': time_serializer.errors}, status=status.HTTP_417_EXPECTATION_FAILED)
+                    serializer = TeacherWithSubjectSerializer(
+                        data={'name': value})
 
-                    
+                    if serializer.is_valid():
+                        try:
+                            serializer.save()
+                        except Exception as e:
+                            continue
+                    try:
 
+                        TeacherSub = TeacherWithSubject.objects.get(
+                            name=value)
+                        day = Day.objects.get(name=day)
+                    except TeacherWithSubject.DoesNotExist:
+                        pass
+                    period_serializer = PeriodSeriallizer(
+                        data={"starting_time": starting_time, "ending_time": ending_time, 'teacherName': TeacherSub.id, 'day': day.id})
+                    if (period_serializer.is_valid(raise_exception=True)):
+                        period_serializer.save()
+                    else:
+                        return Response({'data': serializer.errors}, status=status.HTTP_417_EXPECTATION_FAILED)
 
+        # Save in to db fom row iteration
+        for index, row in df.iterrows():
+            periods_value = []
+            sub_all_value = []
+            for col_name, value in row.items():
+                single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
+                if col_name not in single_fields:
+                    starting_time, ending_time = col_name.split(' ')
+                # break
+                # value = value.replace(" ", "").lower()
+
+                if col_name == 'Day':
+                    day = Day.objects.get(
+                        name=value)
+                    sub_all_value.append(day.id)
+                    day_value = day
+                elif col_name == 'Batch Semester':
+                    try:
+
+                        batchSem = BatchSemester.objects.get(name=value)
+                    except BatchSemester.DoesNotExist:
+                        pass
+                    sub_all_value.append(batchSem.id)
+                elif col_name == 'Room':
+                    room = Room.objects.get(name=value)
+                    sub_all_value.append(room.id)
+
+                elif col_name == 'Group':
+                    group = Group.objects.get(name=value)
+                    sub_all_value.append(group.id)
+
+                else:
+                    try:
+
+                        TeacherSub = TeacherWithSubject.objects.get(
+                            name=value)
+                    except TeacherWithSubject.DoesNotExist:
+                        pass
+                    print(starting_time, ending_time, TeacherSub.id)
+                    period = Period.objects.filter(
+                        teacherName=TeacherSub.id, starting_time=starting_time, ending_time=ending_time, day=day_value.id).values('id').distinct()
+                    print(period)
+                    # for item in period:
+                    #     a = Period.objects.filter(
+                    #         teacherName_id=item['teacherName'])
+                    sub_all_value.append(list(period))
+
+                    # sub_all_value.append(list(period))
+            print([period['id'] for period in sub_all_value[4]])
+            serializer = AutoMatedRoutineSerializers(data={
+                'day': sub_all_value[0],
+                'batchSemester': sub_all_value[1],
+                'room': sub_all_value[2],
+                'group': sub_all_value[3],
+                'period': [period['id'] for period in sub_all_value[4]]
+            })
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            break
+            # all_value.append(sub_all_value)
+
+        # print(all_value)
         df.to_excel('./new.xlsx')
         return Response({'data': df}, status=status.HTTP_200_OK)

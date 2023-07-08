@@ -5,7 +5,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RoutineSerializer, AutoMatedRoutineSerializers
+from .serializers import RoutineSerializer, AutoMatedRoutineSerializersPost
 from .models import Routine, AutoMatedRoutine
 from utils.decorator import with_advance_search
 
@@ -53,7 +53,7 @@ from utils.decorator import with_advance_search
 
 class GetAllAutomatedRoutine(APIView):
     pagination_class = PageNumberPagination
-    serializer_class = AutoMatedRoutineSerializers
+    serializer_class = AutoMatedRoutineSerializersPost
 
     def get(self, request, format=None):
         @with_advance_search
@@ -61,7 +61,7 @@ class GetAllAutomatedRoutine(APIView):
             return request
 
         filter_conditions = get_advance_search(request,
-                                               {'query': ['id', 'day', 'batchSemester', 'room',  'group'  , 'time' ]})
+                                               {'query': ['id', 'day', 'batchSemester', 'room',  'group', 'period']})
 
         instances = AutoMatedRoutine.objects.filter(**filter_conditions)
 
@@ -71,6 +71,7 @@ class GetAllAutomatedRoutine(APIView):
         serializer = self.serializer_class(paginated_instances, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
 
 class GetAllRoutine(APIView):
     pagination_class = PageNumberPagination

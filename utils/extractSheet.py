@@ -25,8 +25,20 @@ class Sheet:
     @property
     def __len__(self):
         return len(self.dataFrame)
+
+    def index_y(self, column):
+        return self.dataFrame[self.dataFrame.eq(column).any(axis=1)].index[0]
+    
+    def save(self, path):
+        self.dataFrame.to_excel(path, index=True)
     
     
+        
+
+class ExtractSheet(Sheet):
+    def __init__(self, url):
+        super().__init__(url)
+
     def _zip_heading(self, new_heading, old_heading):
         return zip(new_heading, old_heading)
     
@@ -44,16 +56,6 @@ class Sheet:
         self.dataFrame.reset_index(drop=True, inplace=True)
 
         return self.dataFrame
-
-    def index_y(self, column):
-        return self.dataFrame[self.dataFrame.eq(column).any(axis=1)].index[0]
-    
-    
-        
-
-class ExtractSheet(Sheet):
-    def __init__(self, url):
-        super().__init__(url)
 
     def remove_unwanted_columns(self, columns, to_index):
         indexs = []

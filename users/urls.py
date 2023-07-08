@@ -1,6 +1,6 @@
 from django.urls import path, include
 
-from .views import UserRegistrationView, UserLoginView, UserDetailView, UserUpdateView, FetchMailView, TokenView, GmailOauthView, OauthLink, CatchOauthCreds, ExtraceSheet
+from .views import UserRegistrationView, UserLoginView, UserDetailView, UserUpdateView, FetchMailView, TokenView, GmailOauthView, OauthLink, CatchOauthCreds, ExtraceSheetView
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user-register'),
@@ -13,5 +13,5 @@ urlpatterns = [
     path('gmailoauth/', GmailOauthView.as_view(), name='gmail-oauth'),
     path('oauthlink/', OauthLink.as_view(), name='oauth-link'),
     path('oauth2callback/', CatchOauthCreds.as_view(), name='oauth-link-catch'),
-    path('extract/',  ExtraceSheet.as_view(), name='extradt')
+    path('extract/',  ExtraceSheetView.as_view(), name='extradt')
 ]

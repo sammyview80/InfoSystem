@@ -22,6 +22,7 @@ from mail.utils.gmail.get_authenticate import get_data_from_url, get_authenticat
 from google.oauth2.credentials import Credentials
 import pandas as pd
 import numpy as np
+from utils.extractSheet import ExtractSheet
 from routine.models import Day, BatchSemester, Room, Group, TeacherWithSubject, Period, AutoMatedRoutine
 from routine.serializers import DaySerializer, BatchSemesterSerializer, RoomSerializer, GroupSerializer, PeriodSeriallizer, TeacherWithSubjectSerializer, AutoMatedRoutineSerializers
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
@@ -252,73 +253,20 @@ class GmailOauthView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ExtraceSheet(APIView):
+class ExtraceSheetView(APIView):
 
     def post(self, request):
         SHEET_ID = '1CNkSTtwgOPKNCPlLI1KPwzIOOz9GI6fW'
         SHEET_NAME = 'AAPL'
         url = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx'
-        df = pd.read_excel('users/output.xlsx')
-        index = df[df.eq('Electives for VIII Sem').any(axis=1)].index
-        df.drop(range(index[0], len(df)), inplace=True)
-        df.drop(1, inplace=True)
-        new_heading = df.iloc[0].tolist()
 
-        old_heading = df.columns.values.tolist()
-
-        ziped_heading = zip(new_heading, old_heading)
-
-        newDict = {}
-        for newHead, oldHeading in list(ziped_heading):
-            newDict[oldHeading] = newHead
-
-        df.rename(columns=newDict, inplace=True)
-
-        df.drop(0, inplace=True)
-
-        df.reset_index(inplace=True)
-
-        df.drop(['index'], axis=1, inplace=True)
-
-        def replace_nan_value(df, column_name):
-            skip_columns = ['Day', 'Batch Semester']
-            prev_value = None
-            column_name_value = df[column_name].tolist()
-            newColumnValue = []
-            for index, value in enumerate(column_name_value):
-                if column_name not in skip_columns and index:
-                    if df.at[index, 'Batch Semester'] != df.at[index - 1, 'Batch Semester']:
-                        prev_value = None
-                if not pd.isna(value):
-                    prev_value = value
-
-                newColumnValue.append(prev_value)
-            df[column_name] = newColumnValue
-
-        for head in df.columns.values.tolist():
-            replace_nan_value(df, head)
-
-        newRowArray = []
-        prev_value = None
-
-        for index, row in df.iterrows():
-            for col_name, value in row.items():
-                if not pd.isna(value):
-                    prev_value = value
-                newRowArray.append(prev_value)
-                df.at[index, col_name] = prev_value
-
-        mask = df.isnull()
-
-        rows_with_nan = df[mask.any(axis=1)]
-        columns_with_nan = df.columns[mask.any(axis=0)]
-
-        df[columns_with_nan[0]]
-        df.at[rows_with_nan.index[0], columns_with_nan[0]] = 'asdn'
-
-        for column in columns_with_nan:
-            for index in rows_with_nan.index:
-                df.at[index, column] = df[column][index+1]
+        sheet = ExtractSheet('users/output.xlsx')
+        sheet.remove_unwanted_columns(['Electives for VIII Sem'], sheet.__len__)
+        sheet.rename_heading(0)
+        sheet.remove_unwanted_columns_index(0)
+        sheet.replace_nan_value_column_all()
+        sheet.replace_nan_value_row_all()
+        df = sheet.replace_nan_value_all()
 
         for head in df.columns.values.tolist():
             single_fields = ['Day', 'Batch Semester', 'Room', 'Group']

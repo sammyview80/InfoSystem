@@ -47,12 +47,11 @@ class PeriodSeriallizer(serializers.ModelSerializer):
     day = serializers.PrimaryKeyRelatedField(queryset=Day.objects.all())
 
     def create(self, validated_data):
-        instance = Period.objects.get(**validated_data)
-        if instance:
-            return 
-        else: 
+        try:
+            return Period.objects.get(**validated_data)
+        except Period.DoesNotExist:
             return super().create(validated_data)
-
+        
     class Meta:
         model = Period
         fields = ['id', 'starting_time', 'ending_time', 'teacherName', 'day']

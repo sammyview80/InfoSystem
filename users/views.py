@@ -273,11 +273,11 @@ class ExtraceSheetView(APIView):
             if head not in single_fields:
                 starting_time, ending_time = head.split(' ')
         #     Save to df with list
-            for value in pd.unique(df[head]):
+            for index, value in enumerate(df[head]):
                 # value = value.replace(" ", "").lower()
                 if head == 'Day':
                     serializer = DaySerializer(data={'name': value})
-                    day = value
+                    prev_day = value
                     if serializer.is_valid():
                         try:
                             serializer.save()
@@ -330,9 +330,13 @@ class ExtraceSheetView(APIView):
 
                         TeacherSub = TeacherWithSubject.objects.get(
                             name=value)
-                        day = Day.objects.get(name=day)
+                        row = df.loc[index, 'Day']
+                        print(row)
+                        day = Day.objects.get(name=row)
                     except TeacherWithSubject.DoesNotExist:
                         pass
+                    if row == 'Wednesday':
+                        print(row, starting_time, ending_time, TeacherSub.id, day.id)
                     period_serializer = PeriodSeriallizer(
                         data={"starting_time": starting_time, "ending_time": ending_time, 'teacherName': TeacherSub.id, 'day': day.id})
                     if (period_serializer.is_valid(raise_exception=True)):
@@ -345,9 +349,9 @@ class ExtraceSheetView(APIView):
             periods_value = []
             sub_all_value = []
             for col_name, value in row.items():
+                
                 single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
-                if col_name not in single_fields:
-                    starting_time, ending_time = col_name.split(' ')
+                
                 # break
                 # value = value.replace(" ", "").lower()
 
@@ -370,36 +374,37 @@ class ExtraceSheetView(APIView):
                 elif col_name == 'Group':
                     group = Group.objects.get(name=value)
                     sub_all_value.append(group.id)
-
-                else:
+                periods = []
+                if col_name not in single_fields:
+                    starting_time, ending_time = col_name.split(' ')
                     try:
 
                         TeacherSub = TeacherWithSubject.objects.get(
                             name=value)
                     except TeacherWithSubject.DoesNotExist:
                         pass
-                    print(starting_time, ending_time, TeacherSub.id)
+                    # print(starting_time, ending_time, TeacherSub.id, day_value.name)
                     period = Period.objects.filter(
                         teacherName=TeacherSub.id, starting_time=starting_time, ending_time=ending_time, day=day_value.id).values('id').distinct()
-                    print(period)
+                    # print(period)
                     # for item in period:
                     #     a = Period.objects.filter(
                     #         teacherName_id=item['teacherName'])
-                    sub_all_value.append(list(period))
+                    if len(period) > 0:
+                        sub_all_value.append(list(period))
 
                     # sub_all_value.append(list(period))
-            print([period['id'] for period in sub_all_value[4]])
-            serializer = AutoMatedRoutineSerializers(data={
-                'day': sub_all_value[0],
-                'batchSemester': sub_all_value[1],
-                'room': sub_all_value[2],
-                'group': sub_all_value[3],
-                'period': [period['id'] for period in sub_all_value[4]]
-            })
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            break
-            # all_value.append(sub_all_value)
+            if 5 < len(sub_all_value): 
+                if len(sub_all_value[4]) > 0:
+                    serializer = AutoMatedRoutineSerializers(data={
+                    'day': sub_all_value[0],
+                    'batchSemester': sub_all_value[1],
+                    'room': sub_all_value[2],
+                    'group': sub_all_value[3],
+                    'period': [period['id'] for period in sub_all_value[4]]
+                    })
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
 
         # print(all_value)
         df.to_excel('./new.xlsx')

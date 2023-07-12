@@ -25,6 +25,10 @@ import numpy as np
 from utils.extractSheet import ExtractSheet
 from routine.models import Day, BatchSemester, Room, Group, TeacherWithSubject, Period, AutoMatedRoutine
 from routine.serializers import DaySerializer, BatchSemesterSerializer, RoomSerializer, GroupSerializer, PeriodSeriallizer, TeacherWithSubjectSerializer, AutoMatedRoutineSerializers
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
+from utils.CustomeResponse import CustomeResponse
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
           "https://www.googleapis.com/auth/gmail.modify"]
 
@@ -34,10 +38,11 @@ class UserRegistrationView(APIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomeResponse({'data': serializer.data, 'message': 'Login Sucessfully.'}, status=status.HTTP_201_CREATED)
+        return CustomeResponse({'data': serializer.errors, 'message': 'Cannot register user'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UserLoginView(APIView):
     def post(self, request):
         email = request.data.get('email')
@@ -49,9 +54,9 @@ class UserLoginView(APIView):
         user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
-            return Response("User successfully logged in.", status=status.HTTP_200_OK)
+            return CustomeResponse({'message': "User successfully logged in.", 'data': {'email': user.get_username()}}, status=status.HTTP_200_OK)
         else:
-            return Response("Invalid email or password.", status=status.HTTP_401_UNAUTHORIZED)
+            return CustomeResponse({'message': "Invalid email or password.", 'data': f'{email} is unknown'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserDetailView(APIView):
@@ -61,7 +66,7 @@ class UserDetailView(APIView):
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return CustomeResponse({'data': serializer.data, 'message': 'Sucessfully get user.'}, status=status.HTTP_200_OK)
 
 
 class UserUpdateView(APIView):
@@ -83,7 +88,7 @@ class UserUpdateView(APIView):
         # Save the updated user
         user.save()
 
-        return Response("User successfully updated")
+        return CustomeResponse({'data': user, 'message': 'User successfully updated'})
 
 
 class FetchMailView(APIView):
@@ -261,7 +266,8 @@ class ExtraceSheetView(APIView):
         url = f'https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx'
 
         sheet = ExtractSheet('users/output.xlsx')
-        sheet.remove_unwanted_columns(['Electives for VIII Sem'], sheet.__len__)
+        sheet.remove_unwanted_columns(
+            ['Electives for VIII Sem'], sheet.__len__)
         sheet.rename_heading(0)
         sheet.remove_unwanted_columns_index(0)
         sheet.replace_nan_value_column_all()
@@ -330,13 +336,14 @@ class ExtraceSheetView(APIView):
 
                         TeacherSub = TeacherWithSubject.objects.get(
                             name=value)
-                        row = df.loc[index, 'Day']
+                        row = df.loc[df['Day'].get_loc(value), 'Day']
                         print(row)
                         day = Day.objects.get(name=row)
                     except TeacherWithSubject.DoesNotExist:
                         pass
                     if row == 'Wednesday':
-                        print(row, starting_time, ending_time, TeacherSub.id, day.id)
+                        print(row, starting_time, ending_time,
+                              TeacherSub.id, day.id)
                     period_serializer = PeriodSeriallizer(
                         data={"starting_time": starting_time, "ending_time": ending_time, 'teacherName': TeacherSub.id, 'day': day.id})
                     if (period_serializer.is_valid(raise_exception=True)):
@@ -349,9 +356,9 @@ class ExtraceSheetView(APIView):
             periods_value = []
             sub_all_value = []
             for col_name, value in row.items():
-                
+
                 single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
-                
+
                 # break
                 # value = value.replace(" ", "").lower()
 
@@ -394,14 +401,14 @@ class ExtraceSheetView(APIView):
                         sub_all_value.append(list(period))
 
                     # sub_all_value.append(list(period))
-            if 5 < len(sub_all_value): 
+            if 5 < len(sub_all_value):
                 if len(sub_all_value[4]) > 0:
                     serializer = AutoMatedRoutineSerializers(data={
-                    'day': sub_all_value[0],
-                    'batchSemester': sub_all_value[1],
-                    'room': sub_all_value[2],
-                    'group': sub_all_value[3],
-                    'period': [period['id'] for period in sub_all_value[4]]
+                        'day': sub_all_value[0],
+                        'batchSemester': sub_all_value[1],
+                        'room': sub_all_value[2],
+                        'group': sub_all_value[3],
+                        'period': [period['id'] for period in sub_all_value[4]]
                     })
                     serializer.is_valid(raise_exception=True)
                     serializer.save()

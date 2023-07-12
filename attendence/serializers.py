@@ -1,12 +1,12 @@
 from .models import Attendence
 from rest_framework import serializers
 from users.serializers import UserSerializer
-from subject.serializers import SubjectSerializer
+from subject.serializers import SubjectAddSerializer
 
 
 class AttendenceSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-    subject = SubjectSerializer()
+    subject = SubjectAddSerializer()
 
     class Meta:
         model = Attendence

@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import datetime
+from subject.models import SubjectAdd
 
 
 class Semester(models.Model):
@@ -28,6 +29,7 @@ class Year(models.Model):
 
 class Faculty(models.Model):
     faculty = models.CharField(max_length=100)
+    subjects = models.ManyToManyField(SubjectAdd, blank=True)
 
     def __str__(self):
         return self.faculty

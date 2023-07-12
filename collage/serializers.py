@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Year, Semester, Faculty
+from subject.serializers import SubjectAddSerializer
 
 
 class SemesterSerializer(serializers.ModelSerializer):
@@ -17,7 +18,8 @@ class YearSerializer(serializers.ModelSerializer):
 
 
 class FacultySerializer(serializers.ModelSerializer):
+    subjects = SubjectAddSerializer()
 
     class Meta:
         model = Faculty
-        fields = ['id', 'faculty']
+        fields = ['id', 'faculty', 'subjects']

@@ -3,6 +3,8 @@ from django.db import models
 import os
 from django.core.validators import RegexValidator
 from collage.models import Semester, Year, Faculty
+from subject.models import SubjectAdd
+
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -19,24 +21,23 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         return self.create_user(email, password, **extra_fields)
-    
-
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, validators=[
-            RegexValidator(
-                regex=r'^[\w.-]+@nec\.edu\.np$',
-                message="Please use NEC email address")
-        ])
+        RegexValidator(
+            regex=r'^[\w.-]+@nec\.edu\.np$',
+            message="Please use NEC email address")
+    ])
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    semester = models.OneToOneField(Semester, on_delete=models.CASCADE, null=True)
+    semester = models.OneToOneField(
+        Semester, on_delete=models.CASCADE, null=True)
     year = models.OneToOneField(Year, on_delete=models.CASCADE, null=True)
-    faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, null=True)
-
+    faculty = models.OneToOneField(
+        Faculty, on_delete=models.CASCADE, null=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
 

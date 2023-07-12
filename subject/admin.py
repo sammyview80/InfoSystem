@@ -1,6 +1,5 @@
 from django.contrib import admin
 
-from .models import Subject, SubjectAdd
+from .models import SubjectAdd
 
-admin.site.register(Subject)
 admin.site.register(SubjectAdd)

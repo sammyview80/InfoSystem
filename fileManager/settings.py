@@ -65,7 +65,8 @@ INSTALLED_APPS = [
     'documents',
     'subject',
     'attendence',
-    'routine'
+    'routine',
+    'teacher'
 ]
 
 MIDDLEWARE = [

@@ -1,3 +1,4 @@
+import json
 from google.auth.transport.requests import Request
 import pickle
 import io
@@ -274,6 +275,9 @@ class ExtraceSheetView(APIView):
         sheet.replace_nan_value_row_all()
         df = sheet.replace_nan_value_all()
 
+        print(df)
+        return CustomeResponse({'data': df.to_json(), "message": 'Json data retrive sucess.'}, status=status.HTTP_200_OK)
+
         for head in df.columns.values.tolist():
             single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
             if head not in single_fields:
@@ -336,7 +340,7 @@ class ExtraceSheetView(APIView):
 
                         TeacherSub = TeacherWithSubject.objects.get(
                             name=value)
-                        row = df.loc[df['Day'].get_loc(value), 'Day']
+                        row = df.loc[index, 'Day']
                         print(row)
                         day = Day.objects.get(name=row)
                     except TeacherWithSubject.DoesNotExist:

@@ -1,3 +1,6 @@
+from google.oauth2 import service_account
+from urllib.parse import urlparse, parse_qs
+import gspread
 import json
 from google.auth.transport.requests import Request
 import pickle
@@ -276,7 +279,7 @@ class ExtraceSheetView(APIView):
         df = sheet.replace_nan_value_all()
 
         print(df)
-        return CustomeResponse({'data': df.to_json(), "message": 'Json data retrive sucess.'}, status=status.HTTP_200_OK)
+        # return CustomeResponse({'data': df.to_json(), "message": 'Json data retrive sucess.'}, status=status.HTTP_200_OK)
 
         for head in df.columns.values.tolist():
             single_fields = ['Day', 'Batch Semester', 'Room', 'Group']
@@ -394,7 +397,6 @@ class ExtraceSheetView(APIView):
                             name=value)
                     except TeacherWithSubject.DoesNotExist:
                         pass
-                    # print(starting_time, ending_time, TeacherSub.id, day_value.name)
                     period = Period.objects.filter(
                         teacherName=TeacherSub.id, starting_time=starting_time, ending_time=ending_time, day=day_value.id).values('id').distinct()
                     # print(period)
@@ -420,3 +422,28 @@ class ExtraceSheetView(APIView):
         # print(all_value)
         df.to_excel('./new.xlsx')
         return Response({'data': df}, status=status.HTTP_200_OK)
+
+
+class GetDataFromUrl(APIView):
+    def get(self, request):
+        sheet_url = request.query_params.get(
+            'sheet_url') or 'https://docs.google.com/spreadsheets/d/1NRd3pMD9S2sEnt1mhqBAj_07z-dwRGbFANMsD4ReFL0/edit#gid=934131427'
+        scopes = ['https://www.googleapis.com/auth/spreadsheets',
+                  'https://www.googleapis.com/auth/drive']
+        credentials = service_account.Credentials.from_service_account_file(
+            'mail/drive-creds.json', scopes=scopes)
+        client = gspread.authorize(credentials)
+
+        # sheet_url = 'https://docs.google.com/spreadsheets/d/1NRd3pMD9S2sEnt1mhqBAj_07z-dwRGbFANMsD4ReFL0/edit#gid=934131427'
+        sheet_name = 'classes'
+
+        sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
+
+        print('sheet', sheet)
+        data = sheet.get_all_values()
+
+        data = pd.read_json(json.dumps(data))
+        data.to_excel('./fetched.xlsx')
+        print(data)
+
+        return Response({'data': data}, status=status.HTTP_200_OK)
